@@ -1,7 +1,7 @@
 package main
 
 import (
-	"fmt"
+	"go-api/user"
 	"log"
 
 	"gorm.io/driver/mysql"
@@ -9,12 +9,16 @@ import (
 )
 
 func main() {
-	dsn := "root:@tcp(127.0.0.1:3306)/api_db?charset=utf8mb4&parseTime=True&loc=Local"
-	_, err := gorm.Open(mysql.Open(dsn), &gorm.Config{})
+	dsn := "root:@tcp(192.168.100.150:3306)/api_db?charset=utf8mb4&parseTime=True&loc=Local"
+	db, err := gorm.Open(mysql.Open(dsn), &gorm.Config{})
 
 	if err != nil {
 		log.Fatal(err.Error())
 	}
 
-	fmt.Println("Connection to DB Success!!!")
+	userRepository := user.NewRepository(db)
+	user := user.User{
+		Name: "test simpan",
+	}
+	userRepository.Save(user)
 }
