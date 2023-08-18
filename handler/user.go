@@ -21,7 +21,9 @@ func (h *userHandler) RegisterUser(c *gin.Context) {
 
 	err := c.ShouldBindJSON(&input)
 	if err != nil {
-		response := helper.ApiResponse("Account register failed!", http.StatusBadRequest, "error", nil)
+		errors := helper.ValidationErrResponse(err)
+		errorMessage := gin.H{"errors": errors}
+		response := helper.ApiResponse("Account register failed!", http.StatusUnprocessableEntity, "error", errorMessage)
 		c.JSON(http.StatusBadRequest, response)
 		return
 	}
