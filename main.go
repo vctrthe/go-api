@@ -1,9 +1,11 @@
 package main
 
 import (
+	"go-api/handler"
 	"go-api/user"
 	"log"
 
+	"github.com/gin-gonic/gin"
 	"gorm.io/driver/mysql"
 	"gorm.io/gorm"
 )
@@ -18,10 +20,11 @@ func main() {
 
 	userRepository := user.NewRepository(db)
 	userService := user.NewService(userRepository)
-	userInput := user.RegisterUserInput{}
-	userInput.Name = "Test simpan 2"
-	userInput.Email = "example@mail.com"
-	userInput.Occupation = "test3"
-	userInput.Password = "test"
-	userService.RegisterUser(userInput)
+	userHandler := handler.NewUserHandler(userService)
+
+	router := gin.Default()
+	api := router.Group("/api/v1")
+	api.POST("/users", userHandler.RegisterUser)
+
+	router.Run()
 }
