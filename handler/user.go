@@ -2,6 +2,7 @@ package handler
 
 import (
 	"fmt"
+	"go-api/auth"
 	"go-api/helper"
 	"go-api/user"
 	"net/http"
@@ -11,10 +12,11 @@ import (
 
 type userHandler struct {
 	userService user.Service
+	authService auth.Service
 }
 
-func NewUserHandler(userService user.Service) *userHandler {
-	return &userHandler{userService}
+func NewUserHandler(userService user.Service, authService auth.Service) *userHandler {
+	return &userHandler{userService, authService}
 }
 
 func (h *userHandler) RegisterUser(c *gin.Context) {
@@ -36,7 +38,13 @@ func (h *userHandler) RegisterUser(c *gin.Context) {
 		return
 	}
 
-	formatter := user.FormatUser(newUser, "tokentokentokentoken")
+	token, err := h.authService.GenerateToken(newUser.ID)
+	if err != nil {
+		response := helper.ApiResponse("Account register failed!", http.StatusBadRequest, "error", nil)
+		c.JSON(http.StatusBadRequest, response)
+		return
+	}
+	formatter := user.FormatUser(newUser, token)
 	response := helper.ApiResponse("Account has been registered!", http.StatusOK, "success", formatter)
 	c.JSON(http.StatusOK, response)
 }
@@ -61,7 +69,13 @@ func (h *userHandler) LoginUser(c *gin.Context) {
 		return
 	}
 
-	formatter := user.FormatUser(loggedIn, "tokentokentokentoken")
+	token, err := h.authService.GenerateToken(loggedIn.ID)
+	if err != nil {
+		response := helper.ApiResponse("Account login failed!", http.StatusBadRequest, "error", nil)
+		c.JSON(http.StatusBadRequest, response)
+		return
+	}
+	formatter := user.FormatUser(loggedIn, token)
 	response := helper.ApiResponse("Login Success!", http.StatusOK, "success", formatter)
 	c.JSON(http.StatusOK, response)
 }
@@ -103,8 +117,8 @@ func (h *userHandler) AvatarUpload(c *gin.Context) {
 		c.JSON(http.StatusBadRequest, response)
 		return
 	}
-	// temp token
-	userID := 1
+	currentUser := c.MustGet("currentUser").(user.User)
+	userID := currentUser.ID
 	path := fmt.Sprintf("images/%d-%s", userID, file.Filename)
 	err = c.SaveUploadedFile(file, path)
 	if err != nil {
