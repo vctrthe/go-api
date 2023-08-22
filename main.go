@@ -2,6 +2,7 @@ package main
 
 import (
 	"go-api/auth"
+	"go-api/campaign"
 	"go-api/handler"
 	"go-api/helper"
 	"go-api/user"
@@ -24,9 +25,12 @@ func main() {
 	}
 
 	userRepository := user.NewRepository(db)
+	campaignRepository := campaign.NewRepository(db)
 	userService := user.NewService(userRepository)
+	campaignService := campaign.NewService(campaignRepository)
 	authService := auth.NewService()
 	userHandler := handler.NewUserHandler(userService, authService)
+	campaignHandler := handler.NewCampaignHandler(campaignService)
 
 	router := gin.Default()
 	api := router.Group("/api/v1")
@@ -34,6 +38,7 @@ func main() {
 	api.POST("/sessions", userHandler.LoginUser)
 	api.POST("/email_check", userHandler.CheckEmail)
 	api.POST("/avatars", authMiddleware(authService, userService), userHandler.AvatarUpload)
+	api.GET("/campaigns", campaignHandler.GetCampaigns)
 
 	router.Run()
 }
