@@ -35,12 +35,15 @@ func main() {
 	router := gin.Default()
 	router.Static("/images", "./images")
 	api := router.Group("/api/v1")
+	// User-related endpoints
 	api.POST("/users", userHandler.RegisterUser)
 	api.POST("/sessions", userHandler.LoginUser)
 	api.POST("/email_check", userHandler.CheckEmail)
 	api.POST("/avatars", authMiddleware(authService, userService), userHandler.AvatarUpload)
+	// Campaign-related endpoints
 	api.GET("/campaigns", campaignHandler.GetCampaigns)
 	api.GET("/campaigns/:id", campaignHandler.GetCampaign)
+	api.POST("/campaigns", authMiddleware(authService, userService), campaignHandler.CreateCampaign)
 
 	router.Run()
 }
