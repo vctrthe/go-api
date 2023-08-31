@@ -2,3 +2,6 @@ images/*.jpg
 images/*.png
 images/*.jpeg
 images/for_upload/*
+images/campaign-images/*.jpg
+images/campaign-images/*.png
+images/campaign-images/*.jpeg
