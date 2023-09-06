@@ -3,27 +3,24 @@ package main
 import (
 	"go-api/auth"
 	"go-api/campaign"
+	"go-api/database"
 	"go-api/handler"
-	"go-api/helper"
+	"go-api/middleware"
 	"go-api/transaction"
 	"go-api/user"
 	"log"
-	"net/http"
-	"strings"
 
-	"github.com/dgrijalva/jwt-go"
 	"github.com/gin-gonic/gin"
-	"gorm.io/driver/mysql"
-	"gorm.io/gorm"
+	"github.com/joho/godotenv"
 )
 
 func main() {
-	dsn := "root:@tcp(192.168.100.150:3306)/api_db?charset=utf8mb4&parseTime=True&loc=Local"
-	db, err := gorm.Open(mysql.Open(dsn), &gorm.Config{})
-
+	// Reading database config file and database init
+	err := godotenv.Load()
 	if err != nil {
-		log.Fatal(err.Error())
+		log.Fatal("Error loading .env file")
 	}
+	db := database.Init()
 
 	// Repositories
 	userRepository := user.NewRepository(db)
@@ -33,7 +30,10 @@ func main() {
 	userService := user.NewService(userRepository)
 	campaignService := campaign.NewService(campaignRepository)
 	transactionService := transaction.NewService(transactionRepository, campaignRepository)
-	authService := auth.NewService()
+	authService, err := auth.NewService(".jwt_secret")
+	if err != nil {
+		log.Fatal("Error initializing JWT Service", err)
+	}
 	// Handlers
 	userHandler := handler.NewUserHandler(userService, authService)
 	campaignHandler := handler.NewCampaignHandler(campaignService)
@@ -47,56 +47,15 @@ func main() {
 	api.POST("/users", userHandler.RegisterUser)
 	api.POST("/sessions", userHandler.LoginUser)
 	api.POST("/email_check", userHandler.CheckEmail)
-	api.POST("/avatars", authMiddleware(authService, userService), userHandler.AvatarUpload)
+	api.POST("/avatars", middleware.AuthMiddleware(authService, userService), userHandler.AvatarUpload)
 	// Campaign-related endpoints
 	api.GET("/campaigns", campaignHandler.GetCampaigns)
 	api.GET("/campaigns/:id", campaignHandler.GetCampaign)
-	api.POST("/campaigns", authMiddleware(authService, userService), campaignHandler.CreateCampaign)
-	api.PUT("/campaigns/:id", authMiddleware(authService, userService), campaignHandler.UpdateCampaign)
-	api.POST("/campaign-images", authMiddleware(authService, userService), campaignHandler.UploadImage)
+	api.POST("/campaigns", middleware.AuthMiddleware(authService, userService), campaignHandler.CreateCampaign)
+	api.PUT("/campaigns/:id", middleware.AuthMiddleware(authService, userService), campaignHandler.UpdateCampaign)
+	api.POST("/campaign-images", middleware.AuthMiddleware(authService, userService), campaignHandler.UploadImage)
 	// Transaction-related endpoints
-	api.GET("/campaigns/:id/transactions", authMiddleware(authService, userService), transactionHandler.GetCampaignTransactions)
-	api.GET("/transactions", authMiddleware(authService, userService), transactionHandler.GetUserTransaction)
+	api.GET("/campaigns/:id/transactions", middleware.AuthMiddleware(authService, userService), transactionHandler.GetCampaignTransactions)
+	api.GET("/transactions", middleware.AuthMiddleware(authService, userService), transactionHandler.GetUserTransaction)
 	router.Run()
-}
-
-func authMiddleware(authService auth.Service, userService user.Service) gin.HandlerFunc {
-	return func(c *gin.Context) {
-		authHeader := c.GetHeader("Authorization")
-		if !strings.Contains(authHeader, "Bearer") {
-			response := helper.ApiResponse("Unauthorized", http.StatusUnauthorized, "error", nil)
-			c.AbortWithStatusJSON(http.StatusUnauthorized, response)
-			return
-		}
-
-		tokenString := ""
-		arrayToken := strings.Split(authHeader, " ")
-		if len(arrayToken) == 2 {
-			tokenString = arrayToken[1]
-		}
-
-		token, err := authService.ValidateToken(tokenString)
-		if err != nil {
-			response := helper.ApiResponse("Unauthorized", http.StatusUnauthorized, "error", nil)
-			c.AbortWithStatusJSON(http.StatusUnauthorized, response)
-			return
-		}
-
-		claim, ok := token.Claims.(jwt.MapClaims)
-		if !ok || !token.Valid {
-			response := helper.ApiResponse("Unauthorized", http.StatusUnauthorized, "error", nil)
-			c.AbortWithStatusJSON(http.StatusUnauthorized, response)
-			return
-		}
-
-		userID := int(claim["user_id"].(float64))
-		user, err := userService.GetUserByID(userID)
-		if err != nil {
-			response := helper.ApiResponse("Unauthorized", http.StatusUnauthorized, "error", nil)
-			c.AbortWithStatusJSON(http.StatusUnauthorized, response)
-			return
-		}
-
-		c.Set("currentUser", user)
-	}
 }

@@ -5,3 +5,7 @@ images/for_upload/*
 images/campaign-images/*.jpg
 images/campaign-images/*.png
 images/campaign-images/*.jpeg
+
+# environment tables and secret values
+.env
+.jwt_secret
