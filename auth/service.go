@@ -2,7 +2,7 @@ package auth
 
 import (
 	"errors"
-	"io/ioutil"
+	"go-api/config"
 	"strings"
 
 	"github.com/dgrijalva/jwt-go"
@@ -18,12 +18,7 @@ type jwtService struct {
 }
 
 func NewService(secretKeyFile string) (*jwtService, error) {
-	keyBytes, err := ioutil.ReadFile(secretKeyFile)
-	if err != nil {
-		return nil, err
-	}
-
-	secretKey := strings.TrimSpace(string(keyBytes))
+	secretKey := strings.TrimSpace(config.JwtSecret)
 
 	return &jwtService{secretKey: []byte(secretKey)}, nil
 }
