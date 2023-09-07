@@ -8,5 +8,5 @@ images/campaign-images/*.jpeg
 
 # environment tables and secret values
 .db_env
-.jwt_secret
+.jwt_service
 .payment_env

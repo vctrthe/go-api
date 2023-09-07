@@ -17,9 +17,8 @@ type jwtService struct {
 	secretKey []byte
 }
 
-func NewService(secretKeyFile string) (*jwtService, error) {
-	secretKey := strings.TrimSpace(config.JwtSecret)
-
+func NewService() (*jwtService, error) {
+	secretKey := strings.TrimSpace(config.SecretKey)
 	return &jwtService{secretKey: []byte(secretKey)}, nil
 }
 

@@ -4,6 +4,7 @@ import (
 	"go-api/api"
 	"go-api/auth"
 	"go-api/campaign"
+	"go-api/config"
 	"go-api/database"
 	"go-api/transaction"
 	"go-api/user"
@@ -18,7 +19,17 @@ type App struct {
 }
 
 func InitApp() *App {
-	db := database.Init()
+	dbConfig := config.DbConfig{
+		Username:  config.DbUsername,
+		Password:  config.DbPassword,
+		Host:      config.DbHost,
+		Port:      config.DbPort,
+		DBName:    config.DbName,
+		Charset:   config.DbCharset,
+		ParseTime: config.DbParseTime,
+		Loc:       config.DbLoc,
+	}
+	db := database.InitDatabase(dbConfig)
 
 	// Repositories
 	userRepository := user.NewRepository(db)
@@ -31,7 +42,7 @@ func InitApp() *App {
 	transactionService := transaction.NewService(transactionRepository, campaignRepository)
 
 	// JWT Service
-	authService, err := auth.NewService(".jwt_secret")
+	authService, err := auth.NewService()
 	if err != nil {
 		log.Fatal("Error initializing JWT Service", err)
 	}

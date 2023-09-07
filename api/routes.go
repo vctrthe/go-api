@@ -35,5 +35,6 @@ func SetupRoutes(router *gin.Engine, authService auth.Service, userService user.
 	transactionRoutes := api.Group("/transactions")
 	transactionHandler := handler.NewTransactionHandler(transactionService)
 	transactionRoutes.GET("/", middleware.AuthMiddleware(authService, userService), transactionHandler.GetUserTransaction)
+	transactionRoutes.POST("/", middleware.AuthMiddleware(authService, userService), transactionHandler.CreateTransaction)
 	transactionRoutes.GET("/campaigns/:id", middleware.AuthMiddleware(authService, userService), transactionHandler.GetCampaignTransactions)
 }
